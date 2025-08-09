@@ -573,7 +573,28 @@ src_install() {
 
         # add kime.desktop to autostart
         insinto /etc/xdg/autostart
-        newins "${WORKDIR}/${P}/res/kime.desktop" kime.desktop
+        newins res/kime.desktop kime.desktop
+        dobin res/kime-xdg-autostart
+
+        # add Shift-Space to config.yaml
+        awk '
+                /^global_hotkeys:/ { in_global=1 }
+                /^category_hotkeys:/ { in_global=0 }
+                {
+                        print
+                        if (in_global && $0 ~ /^[[:space:]]+Hangul:$/) {
+                                print "    Shift-Space:"
+                                print "      behavior: !Toggle"
+                                print "        - Hangul"
+                                print "        - Latin"
+                                print "      result: Consume"
+                        }
+                }
+        ' res/default_config.yaml > res/patched_config.yaml
+
+        newdoc res/patched_config.yaml default_config.yaml
+        insinto /etc/xdg/kime
+        newins res/default_config.yaml config.yaml
 
         if (use X); then
                 dobin target/release/kime-xim
@@ -592,7 +613,6 @@ src_install() {
         fi
 
         if (use doc); then
-                dodoc res/default_config.yaml
                 dodoc LICENSE
                 dodoc NOTICE.md
                 dodoc README.md
@@ -626,7 +646,20 @@ pkg_postinst() {
         xdg_icon_cache_update
         xdg_desktop_database_update
         use gtk && gnome2_query_immodules_gtk3
+
+        elog ""
+        elog "IMPORTANT:"
+        elog "Please log out and log back into your desktop environment after installing kime for the first time"
+        elog "to ensure that the input method is properly registered."
+        elog ""
+        elog "If you are upgrading from a previous version of kime,"
+        elog "Please run the following command in your user session to"
+        elog "reload the systemd user daemon and activate kime autostart:"
+        elog "  systemctl --user daemon-reload"
+        elog "  systemctl --user restart app-kime@autostart.service"
+        elog ""
 }
+
 
 pkg_postrm() {
         xdg_icon_cache_update
