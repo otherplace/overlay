@@ -571,6 +571,10 @@ src_install() {
         dobin target/release/kime
         domenu res/kime.desktop
 
+        # add kime.desktop to autostart
+        insinto /etc/xdg/autostart
+        newins "${WORKDIR}/${P}/res/kime.desktop" kime.desktop
+
         if (use X); then
                 dobin target/release/kime-xim
         fi
