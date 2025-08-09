@@ -571,30 +571,22 @@ src_install() {
         dobin target/release/kime
         domenu res/kime.desktop
 
-        # add kime.desktop to autostart
+        # install kime.desktop to autostart
         insinto /etc/xdg/autostart
         newins res/kime.desktop kime.desktop
         dobin res/kime-xdg-autostart
 
-        # add Shift-Space to config.yaml
-        awk '
-                /^global_hotkeys:/ { in_global=1 }
-                /^category_hotkeys:/ { in_global=0 }
-                {
-                        print
-                        if (in_global && $0 ~ /^[[:space:]]+Hangul:$/) {
-                                print "    Shift-Space:"
-                                print "      behavior: !Toggle"
-                                print "        - Hangul"
-                                print "        - Latin"
-                                print "      result: Consume"
-                        }
-                }
-        ' res/default_config.yaml > res/patched_config.yaml
+        # add Shift-Space section to config.yaml
+        sed  '/^  category_hotkeys:/i\
+    S-Space:\
+      behavior: !Toggle\
+      - Hangul\
+      - Latin\
+      result: Consume' res/default_config.yaml > res/patched_config.yaml
 
         newdoc res/patched_config.yaml default_config.yaml
         insinto /etc/xdg/kime
-        newins res/default_config.yaml config.yaml
+        newins res/patched_config.yaml config.yaml
 
         if (use X); then
                 dobin target/release/kime-xim
